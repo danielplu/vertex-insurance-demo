@@ -22,7 +22,7 @@ from google.cloud.aiplatform import gapic as aip
 from google.cloud.aiplatform import hyperparameter_tuning as hpt
 from kfp.v2 import compiler, dsl
 
-ENDPOINT_NAME = 'flights'
+ENDPOINT_NAME = 'insurance'
 
 
 def train_custom_model(data_set, timestamp, develop_mode, extra_args=None):
@@ -51,7 +51,7 @@ def train_custom_model(data_set, timestamp, develop_mode, extra_args=None):
     model = job.run(
         dataset=data_set,
         # See https://googleapis.dev/python/aiplatform/latest/aiplatform.html#
-        predefined_split_column_name='data_split',
+        #predefined_split_column_name='data_split',
         model_display_name=model_display_name,
         args=model_args,
         replica_count=1,
@@ -69,19 +69,19 @@ def train_automl_model(data_set, timestamp, develop_mode):
     model_display_name = '{}-{}'.format(ENDPOINT_NAME, timestamp)
     job = aiplatform.AutoMLTabularTrainingJob(
         display_name='train-{}'.format(model_display_name),
-        optimization_prediction_type='classification'
+        optimization_prediction_type='regression'
     )
     model = job.run(
         dataset=data_set,
         # See https://googleapis.dev/python/aiplatform/latest/aiplatform.html#
-        predefined_split_column_name='data_split',
-        target_column='ontime',
+        #predefined_split_column_name='data_split',
+        target_column='charges',
         model_display_name=model_display_name,
         budget_milli_node_hours=(300 if develop_mode else 2000),
         disable_early_stopping=False,
         export_evaluated_data_items=True,
-        export_evaluated_data_items_bigquery_destination_uri='{}:dsongcp.ch9_automl_evaluated'.format(PROJECT),
-        export_evaluated_data_items_override_destination=True,
+        #export_evaluated_data_items_bigquery_destination_uri='{}:dsongcp.ch9_automl_evaluated'.format(PROJECT),
+        #export_evaluated_data_items_override_destination=True,
         sync=develop_mode
     )
     return model
@@ -157,7 +157,7 @@ def main():
     aiplatform.init(project=PROJECT, location=REGION, staging_bucket='gs://{}'.format(BUCKET))
 
     # create data set
-    all_files = tf.io.gfile.glob('gs://{}/ch9/data/all*.csv'.format(BUCKET))
+    all_files = tf.io.gfile.glob('gs://{}/*.csv'.format(BUCKET))
     logging.info("Training on {}".format(all_files))
     data_set = aiplatform.TabularDataset.create(
         display_name='data-{}'.format(ENDPOINT_NAME),
@@ -201,7 +201,7 @@ def main():
 
 
 def run_pipeline():
-    compiler.Compiler().compile(pipeline_func=main, package_path='flights_pipeline.json')
+    compiler.Compiler().compile(pipeline_func=main, package_path='insurance_pipeline.json')
 
     job = aip.PipelineJob(
         display_name="{}-pipeline".format(ENDPOINT_NAME),
