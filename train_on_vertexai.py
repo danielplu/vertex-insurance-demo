@@ -157,13 +157,18 @@ def main():
     aiplatform.init(project=PROJECT, location=REGION, staging_bucket='gs://{}'.format(BUCKET))
 
     # create data set
+    """    
     all_files = tf.io.gfile.glob('gs://{}/*.csv'.format(BUCKET))
     logging.info("Training on {}".format(all_files))
     data_set = aiplatform.TabularDataset.create(
         display_name='data-{}'.format(ENDPOINT_NAME),
         gcs_source=all_files
     )
-
+    """
+    data_set = aiplatform.TabularDataset.create(
+        display_name='data-{}'.format(ENDPOINT_NAME),
+        bq_source='bq://prod-337319.sensitive_data_untokenized.insurance'
+    )
     # train
     if AUTOML:
         model = train_automl_model(data_set, TIMESTAMP, DEVELOP_MODE)
@@ -215,12 +220,13 @@ def run_pipeline():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-
+    
     parser.add_argument(
         '--bucket',
         help='Data will be read from gs://BUCKET/ch9/data and checkpoints will be in gs://BUCKET/ch9/trained_model',
         required=True
     )
+    
     parser.add_argument(
         '--region',
         help='Where to run the trainer',
